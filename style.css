@@ -1,30 +1,28 @@
 body {
-    margin: 0;
-    overflow: hidden;
-    font-family: Arial, sans-serif;
-    background: linear-gradient(to bottom, #a0d8f1, #ffffff); /* baby blue sky */
+  background: linear-gradient(to bottom, #ffecf2 0%, #ffe0e8 100%);
+  text-align: center;
+  font-family: 'Comic Sans MS', 'Comic Sans', cursive, Arial, sans-serif;
+  margin: 0;
+  padding: 0;
 }
-#gameCanvas {
-    display: block;
-    margin: 0 auto;
-    background: #a0d8f1;
-}
-#message {
-    position: absolute;
-    top: 20px;
-    width: 100%;
-    text-align: center;
-    font-size: 24px;
-    color: #fff;
-    text-shadow: 2px 2px #000;
+#message, #finalMessage {
+  font-size: 1.7em;
+  margin: 20px auto;
+  padding: 10px 20px;
+  width: fit-content;
+  background: #fff7fa;
+  border-radius: 18px;
+  box-shadow: 0 2px 12px #ffb3c6aa;
 }
 #finalMessage {
-    position: absolute;
-    top: 50%;
-    width: 100%;
-    text-align: center;
-    font-size: 32px;
-    color: #ff69b4;
-    text-shadow: 2px 2px #000;
-    display: none;
+  color: #e75480;
+  font-weight: bold;
+  display: none;
+}
+#gameCanvas {
+  display: block;
+  margin: 30px auto 0 auto;
+  background: linear-gradient(to top, #ffe0e8 0%, #ffffff 100%);
+  border-radius: 24px;
+  box-shadow: 0 4px 22px #ffb6d5cc;
 }
