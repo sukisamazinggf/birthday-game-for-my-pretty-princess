@@ -4,30 +4,66 @@ body {
   font-family: 'Comic Sans MS', 'Comic Sans', cursive, Arial, sans-serif;
   margin: 0;
   padding: 0;
-}
-#startScreen, #gameUI, #failScreen, #endScreen {
-  margin-top: 40px;
+  overflow: hidden;
 }
 h1 {
   color: #e75480;
-  margin-bottom: 30px;
+  margin-bottom: 20px;
+}
+.menu-btns {
+  margin-top: 25px;
+  margin-bottom: 25px;
 }
 button {
-  font-size: 1.5em;
-  padding: 15px 40px;
+  font-size: 1.3em;
+  padding: 14px 32px;
   border: none;
   border-radius: 12px;
   background: #e75480;
   color: #fff;
   box-shadow: 0 2px 12px #e7548099;
   cursor: pointer;
-  margin-top: 20px;
+  margin: 12px;
   transition: background 0.2s;
 }
-button:hover {
-  background: #c6436a;
+button:hover { background: #c6436a; }
+.howto { font-size:1.1em; color:#8d4667; margin-top:8px;}
+#hud {
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  background: #fff7fa;
+  border-radius: 18px;
+  box-shadow: 0 2px 12px #ffb3c6aa;
+  padding: 12px 0;
+  width: 600px;
+  margin: 18px auto 0 auto;
+  font-size: 1.15em;
+  position: relative;
+  z-index: 2;
 }
-#message, #failMessage, .end-caption {
+#gameCanvas {
+  display: block;
+  margin: 0 auto;
+  background: linear-gradient(to top, #ffe0e8 0%, #ffffff 100%);
+  border-radius: 24px;
+  box-shadow: 0 4px 22px #ffb6d5cc;
+  cursor: none !important;
+}
+#crosshair {
+  position: absolute;
+  left: 0; top: 0;
+  pointer-events: none;
+  font-size: 2.2em;
+  z-index: 10;
+  transition: transform 0.05s;
+  text-shadow: 0 2px 8px #ffb6d5bb;
+  user-select: none;
+}
+#failScreen, #winScreen, #easterEgg {
+  margin-top: 60px;
+}
+#failMessage, #congratsMsg, .end-caption {
   font-size: 1.4em;
   margin: 20px auto 0 auto;
   padding: 10px 20px;
@@ -35,20 +71,6 @@ button:hover {
   background: #fff7fa;
   border-radius: 18px;
   box-shadow: 0 2px 12px #ffb3c6aa;
-}
-#failMessage {
-  color: #e75480;
-}
-#gameCanvas {
-  display: block;
-  margin: 30px auto 0 auto;
-  background: linear-gradient(to top, #ffe0e8 0%, #ffffff 100%);
-  border-radius: 24px;
-  box-shadow: 0 4px 22px #ffb6d5cc;
-  cursor: pointer;
-}
-#endScreen {
-  margin-top: 20px;
 }
 #bouquet {
   display: flex;
@@ -58,24 +80,10 @@ button:hover {
   margin-bottom: 40px;
   min-height: 140px;
 }
-.flower {
-  margin: 0 6px;
-  position: relative;
-  top: 0;
-}
-.daisy {
-  font-size: 2.5em;
-  filter: drop-shadow(0 3px 0 #c6e2ff);
-}
-.rose {
-  font-size: 2.5em;
-  filter: drop-shadow(0 3px 0 #c6e2ff);
-}
-#envelopeContainer {
-  display: flex;
-  justify-content: center;
-  margin-bottom: 20px;
-}
+.flower { margin: 0 6px; position: relative; top: 0; }
+.daisy { font-size: 2.5em; filter: drop-shadow(0 3px 0 #c6e2ff);}
+.rose { font-size: 2.5em; filter: drop-shadow(0 3px 0 #c6e2ff);}
+#envelopeContainer { display: flex; justify-content: center; margin-bottom: 20px;}
 #envelope {
   position: relative;
   width: 180px;
@@ -106,9 +114,7 @@ button:hover {
   border: 2px solid #b4cdfc;
   box-shadow: 0 2px 6px #b4cdfc99;
 }
-#envelope.open #envelopeFront {
-  transform: rotateX(-100deg);
-}
+#envelope.open #envelopeFront { transform: rotateX(-100deg);}
 #envelopeBack {
   position: absolute;
   width: 100%;
@@ -136,10 +142,7 @@ button:hover {
   align-items: center;
   justify-content: center;
 }
-#envelope.open #letter {
-  opacity: 1;
-  transform: translateY(0);
-}
+#envelope.open #letter { opacity: 1; transform: translateY(0);}
 #letterText {
   padding: 25px 15px 15px 15px;
   font-size: 1.18em;
