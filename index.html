@@ -9,7 +9,7 @@
 <body>
   <div id="mainMenu">
     <h1>Happy Birthday Princess!</h1>
-    <div class="menu-btns">
+    <div class="menu-btns-center">
       <button class="mode-btn" data-mode="easy">Easy</button>
       <button class="mode-btn" data-mode="medium">Medium</button>
       <button class="mode-btn" data-mode="hard">Hard</button>
@@ -18,6 +18,11 @@
       <p>Aim with your mouse. Click to shoot. Press <b>R</b> or hit the reload button to reload.<br>
       Score 30 hits in 1 minute to win. Good luck!</p>
     </div>
+    <div id="secretHeart" title="hmm?">❤️</div>
+  </div>
+
+  <div id="countdownScreen" style="display:none;">
+    <div id="countdownMsg"></div>
   </div>
 
   <div id="gameUI" style="display:none;">
@@ -29,20 +34,23 @@
       <button id="backBtn">Back</button>
     </div>
     <canvas id="gameCanvas" width="600" height="800"></canvas>
-    <!-- Custom heart crosshair -->
     <div id="crosshair">❤️</div>
   </div>
 
   <div id="failScreen" style="display:none;">
-    <div id="failMessage"></div>
-    <button id="retryBtn">Try again princess</button>
-    <button id="menuBtn">Main Menu</button>
+    <div class="center-btns">
+      <div id="failMessage"></div>
+      <button id="retryBtn">Try again princess</button>
+      <button id="menuBtn">Main Menu</button>
+    </div>
   </div>
 
   <div id="winScreen" style="display:none;">
-    <div id="congratsMsg"></div>
-    <button id="againBtn">Play Again</button>
-    <button id="menuBtn2">Main Menu</button>
+    <div class="center-btns">
+      <div id="congratsMsg"></div>
+      <button id="againBtn">Play Again</button>
+      <button id="menuBtn2">Main Menu</button>
+    </div>
   </div>
 
   <!-- Secret Easter Egg -->
@@ -73,6 +81,7 @@
     <div class="end-caption">With all my love, here's a bouquet and my letter for you!</div>
     <button id="eggMenuBtn">Main Menu</button>
   </div>
+  <audio id="popSound" src="https://cdn.jsdelivr.net/gh/sukisamazinggf/birthday-game-for-my-pretty-princess@main/pop.mp3" preload="auto"></audio>
   <script src="script.js"></script>
 </body>
 </html>
