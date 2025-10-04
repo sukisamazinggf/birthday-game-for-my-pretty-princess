@@ -1,4 +1,3 @@
-// Ensure final message is hidden at start
 document.getElementById('finalMessage').style.display = 'none';
 
 const canvas = document.getElementById('gameCanvas');
@@ -56,7 +55,6 @@ function drawHearts() {
 function checkCollision() {
   for (let i = hearts.length - 1; i >= 0; i--) {
     let h = hearts[i];
-    // Use bounding box for emoji
     if (
       h.y + 24 >= basket.y &&
       h.y <= basket.y + basket.height &&
@@ -121,5 +119,4 @@ function gameLoop() {
 document.getElementById('message').style.display = 'block';
 document.getElementById('message').innerText = `Level ${level} - Hearts: ${collected}/${heartsToCollect}`;
 
-// Start game
 gameLoop();
