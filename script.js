@@ -188,6 +188,12 @@ function drawClouds() {
   ctx.restore();
 }
 
+// --- NEW: spawn more emojis per frame as level increases!
+function emojiDropsPerFrame() {
+  // Level 1: 1 drop most frames, Level 2: up to 2, Level 3: up to 3
+  return level;
+}
+
 function gameLoop() {
   if (stage !== 'playing') return;
   ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -195,6 +201,9 @@ function gameLoop() {
   drawBasket();
   drawHearts();
   checkCollision();
-  if (Math.random() < 0.022) spawnHeart();
+  // Drop more emojis per frame as level increases!
+  for(let i=0; i<emojiDropsPerFrame(); i++) {
+    if (Math.random() < 0.022) spawnHeart();
+  }
   requestAnimationFrame(gameLoop);
 }
