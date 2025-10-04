@@ -1,4 +1,3 @@
-// --- CONFIG ---
 const DIFFICULTIES = {
   easy:   { popupTime: 1300, reload: 6,   spawnDelay: 700 },
   medium: { popupTime: 900,  reload: 5,   spawnDelay: 400 },
@@ -10,7 +9,6 @@ const ROUND_TIME = 60; // seconds
 let state = "menu";
 let difficulty = "easy";
 
-// --- DOM ---
 const mainMenu = document.getElementById('mainMenu');
 const countdownScreen = document.getElementById('countdownScreen');
 const countdownMsg = document.getElementById('countdownMsg');
@@ -37,7 +35,6 @@ const eggMenuBtn = document.getElementById('eggMenuBtn');
 const popSound = document.getElementById('popSound');
 const secretHeart = document.getElementById('secretHeart');
 
-// --- GAME VARS ---
 let timeLeft = ROUND_TIME;
 let score = 0;
 let shots = 0;
@@ -52,7 +49,6 @@ let aiming = false;
 let mouse = { x: 300, y: 400 };
 let perfect = true; // for Easter egg
 
-// --- Main Menu handlers ---
 document.querySelectorAll(".mode-btn").forEach(btn => {
   btn.onclick = () => beginCountdown(btn.dataset.mode);
 });
@@ -71,7 +67,6 @@ menuBtn.onclick = menuBtn2.onclick = eggMenuBtn.onclick = showMenu;
 retryBtn.onclick = againBtn.onclick = () => beginCountdown(difficulty);
 backBtn.onclick = () => showMenu();
 
-// --- Countdown before game starts ---
 function beginCountdown(mode) {
   difficulty = mode;
   mainMenu.style.display = "none";
@@ -96,7 +91,6 @@ function beginCountdown(mode) {
   }, 850);
 }
 
-// --- Game Start ---
 function startGame(mode) {
   state = "playing";
   failScreen.style.display = "none";
@@ -105,11 +99,9 @@ function startGame(mode) {
   gameUI.style.display = "";
   document.body.style.cursor = "none";
   crosshair.style.display = "";
-  // Set difficulty:
   popupTime = DIFFICULTIES[mode].popupTime;
   reloadSize = DIFFICULTIES[mode].reload;
   spawnDelay = DIFFICULTIES[mode].spawnDelay;
-  // Reset
   score = 0;
   shots = 0;
   reloads = 0;
@@ -163,7 +155,6 @@ function clearTimers() {
   clearTimeout(spawnTimer);
 }
 
-// --- Shooting ---
 function moveCrosshair(e) {
   mouse.x = e.clientX;
   mouse.y = e.clientY;
@@ -180,12 +171,9 @@ function placeCrosshair(x, y) {
 }
 function shoot(e) {
   if (state !== "playing" || !target || ammo <= 0) return;
-  popSound.currentTime = 0;
-  popSound.play();
+  try { popSound.currentTime = 0; popSound.play(); } catch(e){}
   shots++;
   ammo--;
-  // check hit (circle hitbox)
-  // must get mouse relative to canvas for hit detection
   let rect = canvas.getBoundingClientRect();
   let mx = mouse.x - rect.left;
   let my = mouse.y - rect.top;
@@ -194,7 +182,7 @@ function shoot(e) {
   if (dx*dx + dy*dy < target.r*target.r) {
     score++;
     updateHUD();
-    popupTarget(false); // remove target
+    popupTarget(false);
     if (score >= WIN_HITS) winGame();
     else spawnTimer = setTimeout(nextTarget, spawnDelay);
   } else {
@@ -211,10 +199,8 @@ function doReload() {
   updateHUD();
 }
 
-// --- Targets ---
 function nextTarget() {
   if (state !== "playing") return;
-  // random spot, not too close to edges
   let x = 60 + Math.random()*(canvas.width-120);
   let y = 100 + Math.random()*(canvas.height-180);
   target = { x, y, r: 36 };
@@ -231,11 +217,9 @@ function popupTarget(removeOnly) {
   }
 }
 
-// --- Drawing ---
 function animate() {
   if (state !== "playing") return;
   ctx.clearRect(0,0,canvas.width,canvas.height);
-  // clouds
   ctx.save();
   ctx.globalAlpha = 0.15;
   ctx.fillStyle = "#fff";
@@ -248,7 +232,6 @@ function animate() {
     ctx.fill();
   }
   ctx.restore();
-  // target
   if (target) {
     ctx.save();
     ctx.beginPath();
@@ -282,7 +265,6 @@ secretHeart.onclick = () => {
   }
 };
 
-// --- Easter Egg perfect round ---
 function showEasterEgg() {
   state = "egg";
   winScreen.style.display = "none";
@@ -311,5 +293,4 @@ function showEasterEgg() {
   };
 }
 
-// --- On load: show menu ---
 showMenu();
