@@ -10,9 +10,20 @@ h1 {
   color: #e75480;
   margin-bottom: 20px;
 }
-.menu-btns {
-  margin-top: 25px;
-  margin-bottom: 25px;
+.menu-btns-center {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 18px;
+  margin-top: 35px;
+  margin-bottom: 30px;
+}
+.center-btns {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 18px;
+  margin-top: 40px;
 }
 button {
   font-size: 1.3em;
@@ -23,7 +34,7 @@ button {
   color: #fff;
   box-shadow: 0 2px 12px #e7548099;
   cursor: pointer;
-  margin: 12px;
+  margin: 0;
   transition: background 0.2s;
 }
 button:hover { background: #c6436a; }
@@ -51,7 +62,7 @@ button:hover { background: #c6436a; }
   cursor: none !important;
 }
 #crosshair {
-  position: absolute;
+  position: fixed;
   left: 0; top: 0;
   pointer-events: none;
   font-size: 2.2em;
@@ -59,8 +70,12 @@ button:hover { background: #c6436a; }
   transition: transform 0.05s;
   text-shadow: 0 2px 8px #ffb6d5bb;
   user-select: none;
+  will-change: transform;
+  width: 44px;
+  height: 44px;
+  text-align: center;
 }
-#failScreen, #winScreen, #easterEgg {
+#failScreen, #winScreen, #easterEgg, #countdownScreen {
   margin-top: 60px;
 }
 #failMessage, #congratsMsg, .end-caption {
@@ -154,4 +169,27 @@ button:hover { background: #c6436a; }
   color: #5a5bb0;
   font-weight: bold;
   font-size: 1.2em;
+}
+#secretHeart {
+  position: absolute;
+  top: 18px; left: 18px;
+  font-size: 2.2em;
+  cursor: pointer;
+  user-select: none;
+  opacity: 0.5;
+  z-index: 100;
+  transition: opacity 0.2s, transform 0.2s;
+}
+#secretHeart:hover { opacity: 1; transform: scale(1.1); }
+#countdownMsg {
+  font-size: 3em;
+  color: #e75480;
+  margin-top: 250px;
+  background: #fff7fa;
+  width: fit-content;
+  margin-left: auto;
+  margin-right: auto;
+  padding: 30px 60px;
+  border-radius: 22px;
+  box-shadow: 0 2px 16px #ffb3c6aa;
 }
