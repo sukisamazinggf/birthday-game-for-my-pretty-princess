@@ -1,9 +1,9 @@
 // ---- CONFIG ----
 const TARGET_RADIUS = 42;
-const TARGET_POPUP_TIME = 1150; // ms target stays for
+const TARGET_POPUP_TIME = 1150;
 const MIN_POPUP = 550;
 const MAX_POPUP = 1300;
-const GAME_TIME = 60; // seconds
+const GAME_TIME = 60;
 const PERFECT_SCORE = 40;
 const POP_ANIM_TIME = 220;
 
@@ -21,6 +21,7 @@ let pointerLocked = false;
 let startTime, timeLeft = GAME_TIME;
 let requestFrameId = null;
 let ended = false;
+let lastMoveTime = Date.now(); // ✨ NEW: track mouse movement time
 
 // ---- DOM ----
 const canvas = document.getElementById('aimCanvas');
@@ -38,7 +39,6 @@ const endTitle = document.getElementById('endTitle');
 const summary = document.getElementById('summary');
 const restartBtn = document.getElementById('restartBtn');
 const popSound = document.getElementById('popSound');
-// easter egg
 const easterEggBlock = document.getElementById('easterEgg');
 const bouquetDiv = document.getElementById('bouquet');
 const envelope = document.getElementById('envelope');
@@ -72,7 +72,6 @@ function startGame() {
   cursorX = window.innerWidth/2;
   cursorY = window.innerHeight/2;
   document.body.style.cursor = "none";
-  // pointer lock for FPS feel
   canvas.requestPointerLock = canvas.requestPointerLock || canvas.mozRequestPointerLock;
   if (canvas.requestPointerLock) canvas.requestPointerLock();
   startTime = Date.now();
@@ -105,7 +104,6 @@ function updateHUD() {
 }
 function spawnTarget() {
   if (!running) return;
-  // Place not too close to edge
   let pad = TARGET_RADIUS + 12;
   let x = pad + Math.random()*(canvas.width-2*pad);
   let y = pad + Math.random()*(canvas.height-2*pad);
@@ -115,7 +113,6 @@ function spawnTarget() {
     if (!currentTarget || currentTarget.popping) return;
     misses++;
     popTarget(false);
-    // Don't spawn new target if time is up
     if (running && timeLeft > 0) setTimeout(spawnTarget, 240);
   }, popup);
 }
@@ -195,20 +192,24 @@ function gameLoop() {
     } else popAnim = null;
   }
 
-  // crosshair (centered)
+  // ✨ NEW: crosshair with pulse effect
   ctx.save();
   ctx.font = "40px Arial";
   ctx.globalAlpha = 0.82;
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
+  let moveDelta = Date.now() - lastMoveTime;
+  let scale = moveDelta < 100 ? 1.5 : 1;
+  ctx.translate(canvas.width/2, canvas.height/2+2);
+  ctx.scale(scale, scale);
   ctx.strokeStyle = "#e75480";
   ctx.lineWidth = 2.5;
   ctx.shadowColor = "#e75480";
   ctx.shadowBlur = 7;
-  ctx.strokeText("+", canvas.width/2, canvas.height/2+2);
+  ctx.strokeText("+", 0, 0);
   ctx.shadowBlur = 0;
   ctx.fillStyle = "#e75480";
-  ctx.fillText("+", canvas.width/2, canvas.height/2+2);
+  ctx.fillText("+", 0, 0);
   ctx.restore();
 
   requestFrameId = requestAnimationFrame(gameLoop);
@@ -220,7 +221,6 @@ canvas.addEventListener("click", () => {
     canvas.requestPointerLock();
     return;
   }
-  // crosshair is always at center in pointer lock
   cursorX = canvas.width/2;
   cursorY = canvas.height/2;
   handleShot();
@@ -232,71 +232,6 @@ document.addEventListener("pointerlockchange", () => {
 });
 document.addEventListener("mousemove", e => {
   if (pointerLocked) {
-    // FPS mouse
     cursorX += e.movementX;
     cursorY += e.movementY;
-    cursorX = Math.max(0, Math.min(canvas.width, cursorX));
-    cursorY = Math.max(0, Math.min(canvas.height, cursorY));
-  }
-});
-
-// ---- UI ----
-startBtn.onclick = startGame;
-restartBtn.onclick = () => {
-  showStart();
-  setTimeout(()=>window.location.reload(), 100);
-};
-envelope.onclick = function() {
-  envelope.classList.add('open');
-};
-
-// Easter Egg: perfect score or click "+" crosshair in end screen 6 times
-let eggClicks = 0;
-endScreen.addEventListener('click', function(e){
-  const rect = canvas.getBoundingClientRect();
-  let cx = window.innerWidth/2, cy = window.innerHeight/2;
-  let mx = e.clientX, my = e.clientY;
-  if (Math.abs(mx-cx)<32 && Math.abs(my-cy)<32) {
-    eggClicks++;
-    if (eggClicks>=6) showEasterEgg();
-  }
-});
-
-function showEndScreen() {
-  uiOverlay.style.display = "none";
-  canvas.style.display = "none";
-  endScreen.style.display = "";
-  let acc = shots>0 ? Math.round((hits/shots)*100) : 100;
-  let msg = `You hit <b>${hits}</b> hearts in ${GAME_TIME} seconds.<br>Accuracy: <b>${acc}%</b>`;
-  summary.innerHTML = msg;
-  if (hits >= PERFECT_SCORE) {
-    endTitle.innerText = "PERFECT!";
-    showEasterEgg();
-  } else if (hits > 20) {
-    endTitle.innerText = "Great job!";
-    easterEggBlock.style.display = "none";
-  } else {
-    endTitle.innerText = "Keep practicing!";
-    easterEggBlock.style.display = "none";
-  }
-}
-function showEasterEgg() {
-  if (easterEggBlock.style.display !== "block") {
-    easterEggBlock.style.display = "block";
-    bouquetDiv.innerHTML = '';
-    for(let i=0; i<5; i++) {
-      const flower = document.createElement('span');
-      flower.className = 'flower daisy';
-      flower.innerText = '🌼';
-      bouquetDiv.appendChild(flower);
-    }
-    for(let i=0; i<5; i++) {
-      const flower = document.createElement('span');
-      flower.className = 'flower rose';
-      flower.innerText = '💙';
-      bouquetDiv.appendChild(flower);
-    }
-  }
-}
-
-showStart();
+    cursorX = Math.max(0, Math
