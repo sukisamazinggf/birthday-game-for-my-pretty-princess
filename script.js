@@ -10,6 +10,9 @@ const basket = {
   height: 20,
 };
 
+let isDragging = false;
+let dragOffsetX = 0;
+
 let hearts = [];
 let collected = 0;
 let level = 1;
@@ -19,20 +22,42 @@ let heartsToCollect = 10; // per level
 const heartColors = ['#ff0000', '#ffffff', '#0000ff'];
 const heartEmojis = ['❤️','🐰','🌼','🍓'];
 
-// Mouse move controls basket
-canvas.addEventListener('mousemove', (e) => {
+// Mouse drag control
+canvas.addEventListener('mousedown', function(e) {
   const rect = canvas.getBoundingClientRect();
   let mouseX = e.clientX - rect.left;
-  basket.x = mouseX - basket.width / 2;
-  if (basket.x < 0) basket.x = 0;
-  if (basket.x + basket.width > canvas.width) basket.x = canvas.width - basket.width;
+  // Check if click is inside the basket
+  if (
+    mouseX >= basket.x &&
+    mouseX <= basket.x + basket.width
+  ) {
+    isDragging = true;
+    dragOffsetX = mouseX - basket.x;
+  }
+});
+canvas.addEventListener('mouseup', function(e) {
+  isDragging = false;
+});
+canvas.addEventListener('mouseleave', function(e) {
+  isDragging = false;
+});
+canvas.addEventListener('mousemove', function(e) {
+  if (isDragging) {
+    const rect = canvas.getBoundingClientRect();
+    let mouseX = e.clientX - rect.left;
+    basket.x = mouseX - dragOffsetX;
+    if (basket.x < 0) basket.x = 0;
+    if (basket.x + basket.width > canvas.width)
+      basket.x = canvas.width - basket.width;
+  }
 });
 
 function spawnHeart() {
   const size = 30;
   const color = heartColors[Math.floor(Math.random() * heartColors.length)];
   const emoji = heartEmojis[Math.floor(Math.random() * heartEmojis.length)];
-  const speed = 2 + level * 1.5 + Math.random() * 1.5;
+  // SPEED INCREASED: was 2 + level*1.5 + Math.random()*1.5
+  const speed = 4 + level * 2 + Math.random() * 2;
   hearts.push({ x: Math.random() * (canvas.width - size), y: -size, size, color, emoji, speed });
 }
 
@@ -59,15 +84,18 @@ function checkCollision() {
       h.x + 24 >= basket.x &&
       h.x <= basket.x + basket.width
     ) {
-      hearts.splice(i, 1);
-      collected++;
-      document.getElementById('message').innerText = "good job princess!";
-      setTimeout(() => {
-        document.getElementById('message').innerText = `Level ${level} - Hearts: ${collected}/${heartsToCollect}`
-      }, 900);
-      if (collected >= heartsToCollect) {
-        setTimeout(nextLevel, 800);
+      // Only collect points for ❤️
+      if (h.emoji === '❤️') {
+        collected++;
+        document.getElementById('message').innerText = "good job princess!";
+        setTimeout(() => {
+          document.getElementById('message').innerText = `Level ${level} - Hearts: ${collected}/${heartsToCollect}`
+        }, 900);
+        if (collected >= heartsToCollect) {
+          setTimeout(nextLevel, 800);
+        }
       }
+      hearts.splice(i, 1);
     } else if (h.y > canvas.height) {
       hearts.splice(i, 1);
     }
@@ -110,7 +138,7 @@ function gameLoop() {
   drawBasket();
   drawHearts();
   checkCollision();
-  if (Math.random() < 0.02) spawnHeart();
+  if (Math.random() < 0.025) spawnHeart();
   requestAnimationFrame(gameLoop);
 }
 
