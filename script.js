@@ -1,302 +1,207 @@
-// ---- CONFIG ----
-const TARGET_RADIUS = 42;
-const TARGET_POPUP_TIME = 1150; // ms target stays for
-const MIN_POPUP = 550;
-const MAX_POPUP = 1300;
-const GAME_TIME = 60; // seconds
-const PERFECT_SCORE = 40;
-const POP_ANIM_TIME = 220;
+let stage = 'start';
 
-// ---- STATE ----
-let running = false;
-let timer = 0;
-let hits = 0, shots = 0, misses = 0;
-let accuracy = 0;
-let targets = [];
-let currentTarget = null;
-let targetTimeout = null;
-let popAnim = null;
-let cursorX = 0, cursorY = 0;
-let pointerLocked = false;
-let startTime, timeLeft = GAME_TIME;
-let requestFrameId = null;
-let ended = false;
-
-// ---- DOM ----
-const canvas = document.getElementById('aimCanvas');
-const ctx = canvas.getContext('2d');
 const startScreen = document.getElementById('startScreen');
-const startBtn = document.getElementById('startBtn');
-const uiOverlay = document.getElementById('uiOverlay');
-const hud = document.getElementById('hud');
-const timerSpan = document.getElementById('timer');
-const scoreSpan = document.getElementById('score');
-const shotsSpan = document.getElementById('shots');
-const accuracySpan = document.getElementById('accuracy');
+const playBtn = document.getElementById('playBtn');
+const gameUI = document.getElementById('gameUI');
+const messageDiv = document.getElementById('message');
+const canvas = document.getElementById('gameCanvas');
+const failScreen = document.getElementById('failScreen');
+const retryBtn = document.getElementById('retryBtn');
 const endScreen = document.getElementById('endScreen');
-const endTitle = document.getElementById('endTitle');
-const summary = document.getElementById('summary');
-const restartBtn = document.getElementById('restartBtn');
-const popSound = document.getElementById('popSound');
-// easter egg
-const easterEggBlock = document.getElementById('easterEgg');
 const bouquetDiv = document.getElementById('bouquet');
 const envelope = document.getElementById('envelope');
 
-// ---- UTILS ----
-function resizeCanvas() {
-  canvas.width = window.innerWidth;
-  canvas.height = window.innerHeight;
-}
-resizeCanvas();
-window.addEventListener('resize', resizeCanvas);
+const ctx = canvas.getContext('2d');
+const basket = { x: canvas.width / 2 - 50, y: canvas.height - 50, width: 100, height: 20 };
+let isDragging = false, dragOffsetX = 0;
+let hearts = [], collected = 0, level = 1, maxLevels = 3, heartsToCollect = 10;
 
-// ---- GAME ----
-function showStart() {
-  startScreen.style.display = "";
-  endScreen.style.display = "none";
-  uiOverlay.style.display = "none";
-  canvas.style.display = "none";
-  ended = false;
-  document.exitPointerLock && document.exitPointerLock();
-}
-function startGame() {
-  running = true;
-  hits = 0; shots = 0; misses = 0;
-  accuracy = 0;
-  timeLeft = GAME_TIME;
-  startScreen.style.display = "none";
-  endScreen.style.display = "none";
-  uiOverlay.style.display = "";
-  canvas.style.display = "";
-  cursorX = window.innerWidth/2;
-  cursorY = window.innerHeight/2;
-  document.body.style.cursor = "none";
-  // pointer lock for FPS feel
-  canvas.requestPointerLock = canvas.requestPointerLock || canvas.mozRequestPointerLock;
-  if (canvas.requestPointerLock) canvas.requestPointerLock();
-  startTime = Date.now();
-  spawnTarget();
-  updateHUD();
-  gameLoop();
-  setTimeout(timerTick, 1000);
-}
-function timerTick() {
-  if (!running) return;
-  timeLeft--;
-  updateHUD();
-  if (timeLeft <= 0) endGame();
-  else setTimeout(timerTick, 1000);
-}
-function endGame() {
-  running = false;
-  ended = true;
-  clearTimeout(targetTimeout);
-  cancelAnimationFrame(requestFrameId);
-  document.exitPointerLock && document.exitPointerLock();
-  showEndScreen();
-}
-function updateHUD() {
-  timerSpan.textContent = `Time: ${timeLeft}s`;
-  scoreSpan.textContent = `Hits: ${hits}`;
-  shotsSpan.textContent = `Shots: ${shots}`;
-  accuracy = shots > 0 ? Math.round((hits/shots)*100) : 100;
-  accuracySpan.textContent = `Accuracy: ${accuracy}%`;
-}
-function spawnTarget() {
-  if (!running) return;
-  // Place not too close to edge
-  let pad = TARGET_RADIUS + 12;
-  let x = pad + Math.random()*(canvas.width-2*pad);
-  let y = pad + Math.random()*(canvas.height-2*pad);
-  currentTarget = {x, y, r: TARGET_RADIUS, popping: false};
-  let popup = MIN_POPUP + Math.random()*(MAX_POPUP-MIN_POPUP);
-  targetTimeout = setTimeout(() => {
-    if (!currentTarget || currentTarget.popping) return;
-    misses++;
-    popTarget(false);
-    // Don't spawn new target if time is up
-    if (running && timeLeft > 0) setTimeout(spawnTarget, 240);
-  }, popup);
-}
-function popTarget(hit) {
-  if (!currentTarget) return;
-  currentTarget.popping = true;
-  if (hit) {
-    popSound.currentTime = 0; popSound.play();
-    hits++;
-  } else {
-    misses++;
-  }
-  shots++;
-  updateHUD();
-  let popX = currentTarget.x, popY = currentTarget.y;
-  popAnim = {x: popX, y: popY, r: TARGET_RADIUS, t: Date.now(), hit};
-  currentTarget = null;
-  clearTimeout(targetTimeout);
-  if (running && timeLeft > 0) setTimeout(spawnTarget, 220);
-}
-function handleShot() {
-  if (!running || !currentTarget) return;
-  let dx = cursorX - currentTarget.x;
-  let dy = cursorY - currentTarget.y;
-  if (dx*dx + dy*dy < currentTarget.r*currentTarget.r) {
-    popTarget(true);
-  } else {
-    popTarget(false);
-  }
-}
-function gameLoop() {
-  ctx.clearRect(0,0,canvas.width,canvas.height);
+const heartColors = ['#ff0000', '#ffffff', '#0000ff'];
+const heartEmojis = ['❤️','🐰','🌼','🍓'];
 
-  // clouds
-  ctx.save();
-  ctx.globalAlpha = 0.12;
-  ctx.fillStyle = "#fff";
-  for (let i = 0; i < 8; i++) {
-    const cloudX = (i * 220 + (Date.now() / 50)) % canvas.width;
-    ctx.beginPath();
-    ctx.arc(cloudX, 120 + i*20, 60, 0, Math.PI * 2);
-    ctx.arc(cloudX + 50, 120 + i*20 + 12, 60, 0, Math.PI * 2);
-    ctx.arc(cloudX + 100, 120 + i*20, 60, 0, Math.PI * 2);
-    ctx.fill();
-  }
-  ctx.restore();
-
-  // target
-  if (currentTarget && !currentTarget.popping) {
-    ctx.save();
-    ctx.beginPath();
-    ctx.arc(currentTarget.x, currentTarget.y, currentTarget.r, 0, 2*Math.PI);
-    ctx.fillStyle = "#fff";
-    ctx.shadowColor = "#e75480";
-    ctx.shadowBlur = 30;
-    ctx.fill();
-    ctx.font = "60px Arial";
-    ctx.textAlign = "center";
-    ctx.textBaseline = "middle";
-    ctx.fillStyle = "#e75480";
-    ctx.shadowBlur = 0;
-    ctx.fillText("❤️", currentTarget.x, currentTarget.y+5);
-    ctx.restore();
-  }
-
-  // pop anim
-  if (popAnim) {
-    let dt = Date.now()-popAnim.t;
-    if (dt < POP_ANIM_TIME) {
-      ctx.save();
-      ctx.beginPath();
-      ctx.arc(popAnim.x, popAnim.y, popAnim.r+dt/5, 0, Math.PI * 2);
-      ctx.globalAlpha = 1-dt/POP_ANIM_TIME;
-      ctx.fillStyle = popAnim.hit ? "#ffb3c6" : "#b8b8b8";
-      ctx.fill();
-      ctx.restore();
-    } else popAnim = null;
-  }
-
-  // crosshair (centered)
-  ctx.save();
-  ctx.font = "40px Arial";
-  ctx.globalAlpha = 0.82;
-  ctx.textAlign = "center";
-  ctx.textBaseline = "middle";
-  ctx.strokeStyle = "#e75480";
-  ctx.lineWidth = 2.5;
-  ctx.shadowColor = "#e75480";
-  ctx.shadowBlur = 7;
-  ctx.strokeText("+", canvas.width/2, canvas.height/2+2);
-  ctx.shadowBlur = 0;
-  ctx.fillStyle = "#e75480";
-  ctx.fillText("+", canvas.width/2, canvas.height/2+2);
-  ctx.restore();
-
-  requestFrameId = requestAnimationFrame(gameLoop);
-}
-
-// ---- INPUT ----
-canvas.addEventListener("click", () => {
-  if (!pointerLocked) {
-    canvas.requestPointerLock();
-    return;
-  }
-  // crosshair is always at center in pointer lock
-  cursorX = canvas.width/2;
-  cursorY = canvas.height/2;
-  handleShot();
-});
-
-document.addEventListener("pointerlockchange", () => {
-  pointerLocked = (document.pointerLockElement === canvas);
-  if (!pointerLocked) document.body.style.cursor = "";
-});
-document.addEventListener("mousemove", e => {
-  if (pointerLocked) {
-    // FPS mouse
-    cursorX += e.movementX;
-    cursorY += e.movementY;
-    cursorX = Math.max(0, Math.min(canvas.width, cursorX));
-    cursorY = Math.max(0, Math.min(canvas.height, cursorY));
-  }
-});
-
-// ---- UI ----
-startBtn.onclick = startGame;
-restartBtn.onclick = () => {
-  showStart();
-  setTimeout(()=>window.location.reload(), 100);
+playBtn.onclick = () => {
+  stage = 'playing';
+  startScreen.style.display = 'none';
+  gameUI.style.display = '';
+  failScreen.style.display = 'none';
+  endScreen.style.display = 'none';
+  resetGame();
+  messageDiv.innerText = `Level ${level} - Hearts: ${collected}/${heartsToCollect}`;
+  requestAnimationFrame(gameLoop);
 };
-envelope.onclick = function() {
-  envelope.classList.add('open');
+retryBtn.onclick = () => {
+  stage = 'playing';
+  startScreen.style.display = 'none';
+  gameUI.style.display = '';
+  failScreen.style.display = 'none';
+  endScreen.style.display = 'none';
+  resetGame();
+  messageDiv.innerText = `Level ${level} - Hearts: ${collected}/${heartsToCollect}`;
+  requestAnimationFrame(gameLoop);
 };
 
-// Easter Egg: perfect score or click "+" crosshair in end screen 6 times
-let eggClicks = 0;
-endScreen.addEventListener('click', function(e){
+canvas.addEventListener('mousedown', function(e) {
+  if(stage !== 'playing') return;
   const rect = canvas.getBoundingClientRect();
-  let cx = window.innerWidth/2, cy = window.innerHeight/2;
-  let mx = e.clientX, my = e.clientY;
-  if (Math.abs(mx-cx)<32 && Math.abs(my-cy)<32) {
-    eggClicks++;
-    if (eggClicks>=6) showEasterEgg();
+  let mouseX = e.clientX - rect.left;
+  if(mouseX >= basket.x && mouseX <= basket.x + basket.width) {
+    isDragging = true;
+    dragOffsetX = mouseX - basket.x;
+  }
+});
+canvas.addEventListener('mouseup', function() { isDragging = false; });
+canvas.addEventListener('mouseleave', function() { isDragging = false; });
+canvas.addEventListener('mousemove', function(e) {
+  if(isDragging && stage === 'playing') {
+    const rect = canvas.getBoundingClientRect();
+    let mouseX = e.clientX - rect.left;
+    basket.x = mouseX - dragOffsetX;
+    if (basket.x < 0) basket.x = 0;
+    if (basket.x + basket.width > canvas.width)
+      basket.x = canvas.width - basket.width;
   }
 });
 
-function showEndScreen() {
-  uiOverlay.style.display = "none";
-  canvas.style.display = "none";
-  endScreen.style.display = "";
-  let acc = shots>0 ? Math.round((hits/shots)*100) : 100;
-  let msg = `You hit <b>${hits}</b> hearts in ${GAME_TIME} seconds.<br>Accuracy: <b>${acc}%</b>`;
-  summary.innerHTML = msg;
-  if (hits >= PERFECT_SCORE) {
-    endTitle.innerText = "PERFECT!";
-    showEasterEgg();
-  } else if (hits > 20) {
-    endTitle.innerText = "Great job!";
-    easterEggBlock.style.display = "none";
-  } else {
-    endTitle.innerText = "Keep practicing!";
-    easterEggBlock.style.display = "none";
-  }
+function resetGame() {
+  basket.x = canvas.width/2 - 50;
+  hearts = [];
+  collected = 0;
+  level = 1;
+  heartsToCollect = 10;
 }
-function showEasterEgg() {
-  if (easterEggBlock.style.display !== "block") {
-    easterEggBlock.style.display = "block";
-    bouquetDiv.innerHTML = '';
-    for(let i=0; i<5; i++) {
-      const flower = document.createElement('span');
-      flower.className = 'flower daisy';
-      flower.innerText = '🌼';
-      bouquetDiv.appendChild(flower);
-    }
-    for(let i=0; i<5; i++) {
-      const flower = document.createElement('span');
-      flower.className = 'flower rose';
-      flower.innerText = '💙';
-      bouquetDiv.appendChild(flower);
+
+function getHeartSpeed() {
+  return 2 + (level - 1) * 1.3 + Math.random() * 1.5;
+}
+
+function spawnHeart() {
+  const size = 30;
+  const color = heartColors[Math.floor(Math.random() * heartColors.length)];
+  const emoji = heartEmojis[Math.floor(Math.random() * heartEmojis.length)];
+  const speed = getHeartSpeed();
+  hearts.push({ x: Math.random() * (canvas.width - size), y: -size, size, color, emoji, speed });
+}
+
+function drawBasket() {
+  ctx.fillStyle = '#fff';
+  ctx.fillRect(basket.x, basket.y, basket.width, basket.height);
+}
+
+function drawHearts() {
+  ctx.font = '28px Arial';
+  hearts.forEach(h => {
+    ctx.fillStyle = h.color;
+    ctx.fillText(h.emoji, h.x, h.y);
+    h.y += h.speed;
+  });
+}
+
+function checkCollision() {
+  for (let i = hearts.length - 1; i >= 0; i--) {
+    let h = hearts[i];
+    if (
+      h.y + 24 >= basket.y &&
+      h.y <= basket.y + basket.height &&
+      h.x + 24 >= basket.x &&
+      h.x <= basket.x + basket.width
+    ) {
+      if (h.emoji === '❤️') {
+        collected++;
+        messageDiv.innerText = "good job princess!";
+        setTimeout(() => {
+          messageDiv.innerText = `Level ${level} - Hearts: ${collected}/${heartsToCollect}`;
+        }, 900);
+        if (collected >= heartsToCollect) {
+          setTimeout(nextLevel, 800);
+        }
+      } else {
+        failGame();
+      }
+      hearts.splice(i, 1);
+    } else if (h.y > canvas.height) {
+      hearts.splice(i, 1);
     }
   }
 }
 
-showStart();
+function nextLevel() {
+  if (stage !== 'playing') return;
+  if (level < maxLevels) {
+    level++;
+    collected = 0;
+    hearts = [];
+    heartsToCollect += 5;
+    messageDiv.innerText = `Level ${level} - Hearts: ${collected}/${heartsToCollect}`;
+  } else {
+    winGame();
+  }
+}
+
+function failGame() {
+  stage = 'fail';
+  gameUI.style.display = 'none';
+  failScreen.style.display = '';
+  endScreen.style.display = 'none';
+}
+
+function winGame() {
+  stage = 'end';
+  gameUI.style.display = 'none';
+  failScreen.style.display = 'none';
+  showBouquetAndLetter();
+  endScreen.style.display = '';
+}
+
+function showBouquetAndLetter() {
+  bouquetDiv.innerHTML = '';
+  for(let i=0; i<5; i++) {
+    const flower = document.createElement('span');
+    flower.className = 'flower daisy';
+    flower.innerText = '🌼';
+    bouquetDiv.appendChild(flower);
+  }
+  for(let i=0; i<5; i++) {
+    const flower = document.createElement('span');
+    flower.className = 'flower rose';
+    flower.innerText = '💙';
+    bouquetDiv.appendChild(flower);
+  }
+  envelope.classList.remove('open');
+  envelope.onclick = function() {
+    envelope.classList.add('open');
+  };
+}
+
+function drawClouds() {
+  ctx.save();
+  ctx.globalAlpha = 0.4;
+  ctx.fillStyle = '#fff';
+  const cloudY = 100;
+  for (let i = 0; i < 5; i++) {
+    const cloudX = (i * 120 + (Date.now() / 50)) % canvas.width;
+    ctx.beginPath();
+    ctx.arc(cloudX, cloudY + i * 20, 30, 0, Math.PI * 2);
+    ctx.arc(cloudX + 30, cloudY + i * 20 + 10, 30, 0, Math.PI * 2);
+    ctx.arc(cloudX + 60, cloudY + i * 20, 30, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  ctx.restore();
+}
+
+// --- Drops more emojis per frame as level increases!
+function emojiDropsPerFrame() {
+  return level;
+}
+
+function gameLoop() {
+  if (stage !== 'playing') return;
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  drawClouds();
+  drawBasket();
+  drawHearts();
+  checkCollision();
+  for(let i=0; i<emojiDropsPerFrame(); i++) {
+    if (Math.random() < 0.022) spawnHeart();
+  }
+  requestAnimationFrame(gameLoop);
+}
