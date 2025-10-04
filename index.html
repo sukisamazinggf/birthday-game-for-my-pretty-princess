@@ -2,84 +2,60 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=600, initial-scale=1.0">
-  <title>Birthday Aim Trainer!</title>
+  <title>Birthday Aim Trainer FPS</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <div id="mainMenu">
+  <div id="startScreen" class="centered">
     <h1>Happy Birthday Princess!</h1>
-    <div class="menu-btns-center">
-      <button class="mode-btn" data-mode="easy">Easy</button>
-      <button class="mode-btn" data-mode="medium">Medium</button>
-      <button class="mode-btn" data-mode="hard">Hard</button>
-    </div>
+    <p>This is your Valorant/Aimlabs-style aim trainer.<br>
+    Move your mouse to aim. Click to shoot targets.<br>
+    <b>Press "Start" and then click anywhere to capture your mouse!</b></p>
+    <button id="startBtn">Start Fullscreen Aimlab</button>
     <div class="howto">
-      <p>Aim with your mouse. Click to shoot. Press <b>R</b> or hit the reload button to reload.<br>
-      Score 30 hits in 1 minute to win. Good luck!</p>
+      <p>Score as many hits as you can in 60 seconds!<br>
+      Try for a perfect score for a surprise 🎁</p>
     </div>
-    <div id="secretHeart" title="hmm?">❤️</div>
   </div>
-
-  <div id="countdownScreen" style="display:none;">
-    <div id="countdownMsg"></div>
-  </div>
-
-  <div id="gameUI" style="display:none;">
+  <canvas id="aimCanvas"></canvas>
+  <div id="uiOverlay" style="display:none;">
     <div id="hud">
       <span id="timer"></span>
       <span id="score"></span>
-      <span id="ammo"></span>
-      <button id="reloadBtn" title="Reload (R)">🔄 Reload</button>
-      <button id="backBtn">Back</button>
-    </div>
-    <canvas id="gameCanvas" width="600" height="800"></canvas>
-    <div id="crosshair">❤️</div>
-  </div>
-
-  <div id="failScreen" style="display:none;">
-    <div class="center-btns">
-      <div id="failMessage"></div>
-      <button id="retryBtn">Try again princess</button>
-      <button id="menuBtn">Main Menu</button>
+      <span id="shots"></span>
+      <span id="accuracy"></span>
     </div>
   </div>
-
-  <div id="winScreen" style="display:none;">
-    <div class="center-btns">
-      <div id="congratsMsg"></div>
-      <button id="againBtn">Play Again</button>
-      <button id="menuBtn2">Main Menu</button>
-    </div>
-  </div>
-
-  <!-- Secret Easter Egg -->
-  <div id="easterEgg" style="display:none;">
-    <div id="bouquet"></div>
-    <div id="envelopeContainer">
-      <div id="envelope">
-        <div id="envelopeFront">
-          <span class="bunny-stamp">🐰</span>
-        </div>
-        <div id="envelopeBack"></div>
-        <div id="letter">
-          <div id="letterText">
-            <h2>For you, my princess 💌</h2>
-            <p>
-              Happy birthday my love!<br>
-              I'm so sorry it took so long to make this. This hurt my head and was hard to figure out how to make.<br>
-              I was afraid you were going to get angry cause you said "ok". I'm sorry I didn't answer when you asked what it was, I didn't want to spoil it for you hehe.<br>
-              Anyway, Happy birthday again, my baby. I love you so much, and I hope that your day will be as beautiful and magical as you.<br>
-              ❤️<br>
-              <br>
-              <span style="font-size:1.1em;">- your idiot, ten</span>
-            </p>
+  <div id="endScreen" class="centered" style="display:none;">
+    <h2 id="endTitle"></h2>
+    <div id="summary"></div>
+    <button id="restartBtn">Play Again</button>
+    <div id="easterEgg" style="display:none;">
+      <div id="bouquet"></div>
+      <div id="envelopeContainer">
+        <div id="envelope">
+          <div id="envelopeFront">
+            <span class="bunny-stamp">🐰</span>
+          </div>
+          <div id="envelopeBack"></div>
+          <div id="letter">
+            <div id="letterText">
+              <h2>For you, my princess 💌</h2>
+              <p>
+                Happy birthday my love!<br>
+                I'm so sorry it took so long to make this. This hurt my head and was hard to figure out how to make.<br>
+                I was afraid you were going to get angry cause you said "ok". I'm sorry I didn't answer when you asked what it was, I didn't want to spoil it for you hehe.<br>
+                Anyway, Happy birthday again, my baby. I love you so much, and I hope that your day will be as beautiful and magical as you.<br>
+                ❤️<br><br>
+                <span style="font-size:1.1em;">- your idiot, ten</span>
+              </p>
+            </div>
           </div>
         </div>
       </div>
+      <div class="end-caption">With all my love, here's a bouquet and my letter for you!</div>
     </div>
-    <div class="end-caption">With all my love, here's a bouquet and my letter for you!</div>
-    <button id="eggMenuBtn">Main Menu</button>
   </div>
   <audio id="popSound" src="https://cdn.pixabay.com/audio/2022/03/15/audio_115b9bfa8a.mp3" preload="auto"></audio>
   <script src="script.js"></script>
