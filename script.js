@@ -1,7 +1,5 @@
-// --- GAME STATE ---
-let stage = 'start'; // start | playing | fail | end
+let stage = 'start';
 
-// --- DOM ELEMENTS ---
 const startScreen = document.getElementById('startScreen');
 const playBtn = document.getElementById('playBtn');
 const gameUI = document.getElementById('gameUI');
@@ -13,18 +11,14 @@ const endScreen = document.getElementById('endScreen');
 const bouquetDiv = document.getElementById('bouquet');
 const envelope = document.getElementById('envelope');
 
-// --- GAME VARS ---
 const ctx = canvas.getContext('2d');
-const basket = { x: canvas.width/2-50, y: canvas.height-50, width: 100, height: 20 };
+const basket = { x: canvas.width / 2 - 50, y: canvas.height - 50, width: 100, height: 20 };
 let isDragging = false, dragOffsetX = 0;
 let hearts = [], collected = 0, level = 1, maxLevels = 3, heartsToCollect = 10;
 
-// --- EMOJIS ---
 const heartColors = ['#ff0000', '#ffffff', '#0000ff'];
 const heartEmojis = ['❤️','🐰','🌼','🍓'];
 
-// --- EVENT HOOKS ---
-// Play button
 playBtn.onclick = () => {
   stage = 'playing';
   startScreen.style.display = 'none';
@@ -35,7 +29,6 @@ playBtn.onclick = () => {
   messageDiv.innerText = `Level ${level} - Hearts: ${collected}/${heartsToCollect}`;
   requestAnimationFrame(gameLoop);
 };
-// Retry
 retryBtn.onclick = () => {
   stage = 'playing';
   startScreen.style.display = 'none';
@@ -47,7 +40,6 @@ retryBtn.onclick = () => {
   requestAnimationFrame(gameLoop);
 };
 
-// Drag & drop controls
 canvas.addEventListener('mousedown', function(e) {
   if(stage !== 'playing') return;
   const rect = canvas.getBoundingClientRect();
@@ -70,7 +62,6 @@ canvas.addEventListener('mousemove', function(e) {
   }
 });
 
-// --- GAME LOGIC ---
 function resetGame() {
   basket.x = canvas.width/2 - 50;
   hearts = [];
@@ -79,7 +70,6 @@ function resetGame() {
   heartsToCollect = 10;
 }
 
-// Heart speed per level: slower at first, increases each level
 function getHeartSpeed() {
   return 2 + (level - 1) * 1.3 + Math.random() * 1.5;
 }
@@ -162,9 +152,7 @@ function winGame() {
   endScreen.style.display = '';
 }
 
-// --- BOUQUET & ENVELOPE ---
 function showBouquetAndLetter() {
-  // Bouquet: 5 daisies, 5 blue roses
   bouquetDiv.innerHTML = '';
   for(let i=0; i<5; i++) {
     const flower = document.createElement('span');
@@ -178,14 +166,12 @@ function showBouquetAndLetter() {
     flower.innerText = '💙';
     bouquetDiv.appendChild(flower);
   }
-  // Envelope
   envelope.classList.remove('open');
   envelope.onclick = function() {
     envelope.classList.add('open');
   };
 }
 
-// --- DRAW CLOUDS ---
 function drawClouds() {
   ctx.save();
   ctx.globalAlpha = 0.4;
@@ -202,7 +188,6 @@ function drawClouds() {
   ctx.restore();
 }
 
-// --- GAME LOOP ---
 function gameLoop() {
   if (stage !== 'playing') return;
   ctx.clearRect(0, 0, canvas.width, canvas.height);
