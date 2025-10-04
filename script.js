@@ -1,3 +1,4 @@
+// Hide final message initially
 document.getElementById('finalMessage').style.display = 'none';
 
 const canvas = document.getElementById('gameCanvas');
@@ -22,11 +23,11 @@ let heartsToCollect = 10; // per level
 const heartColors = ['#ff0000', '#ffffff', '#0000ff'];
 const heartEmojis = ['❤️','🐰','🌼','🍓'];
 
-// Mouse drag control
+// --- Mouse drag control ---
 canvas.addEventListener('mousedown', function(e) {
   const rect = canvas.getBoundingClientRect();
   let mouseX = e.clientX - rect.left;
-  // Check if click is inside the basket
+  // Only start drag if mouse is on the basket
   if (
     mouseX >= basket.x &&
     mouseX <= basket.x + basket.width
@@ -35,10 +36,10 @@ canvas.addEventListener('mousedown', function(e) {
     dragOffsetX = mouseX - basket.x;
   }
 });
-canvas.addEventListener('mouseup', function(e) {
+canvas.addEventListener('mouseup', function() {
   isDragging = false;
 });
-canvas.addEventListener('mouseleave', function(e) {
+canvas.addEventListener('mouseleave', function() {
   isDragging = false;
 });
 canvas.addEventListener('mousemove', function(e) {
@@ -56,14 +57,14 @@ function spawnHeart() {
   const size = 30;
   const color = heartColors[Math.floor(Math.random() * heartColors.length)];
   const emoji = heartEmojis[Math.floor(Math.random() * heartEmojis.length)];
-  // SPEED INCREASED: was 2 + level*1.5 + Math.random()*1.5
-  const speed = 4 + level * 2 + Math.random() * 2;
+  const speed = 4 + level * 2 + Math.random() * 2; // FASTER!
   hearts.push({ x: Math.random() * (canvas.width - size), y: -size, size, color, emoji, speed });
 }
 
 function drawBasket() {
   ctx.fillStyle = '#fff';
   ctx.fillRect(basket.x, basket.y, basket.width, basket.height);
+  // NO gift emoji!
 }
 
 function drawHearts() {
@@ -84,12 +85,12 @@ function checkCollision() {
       h.x + 24 >= basket.x &&
       h.x <= basket.x + basket.width
     ) {
-      // Only collect points for ❤️
+      // Only ❤️ gives points!
       if (h.emoji === '❤️') {
         collected++;
         document.getElementById('message').innerText = "good job princess!";
         setTimeout(() => {
-          document.getElementById('message').innerText = `Level ${level} - Hearts: ${collected}/${heartsToCollect}`
+          document.getElementById('message').innerText = `Level ${level} - Hearts: ${collected}/${heartsToCollect}`;
         }, 900);
         if (collected >= heartsToCollect) {
           setTimeout(nextLevel, 800);
