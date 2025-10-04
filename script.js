@@ -1,17 +1,19 @@
 // --- CONFIG ---
 const DIFFICULTIES = {
-  easy:   { popupTime: 1100, reload: 6,   spawnDelay: 550 },
-  medium: { popupTime: 700,  reload: 5,   spawnDelay: 350 },
-  hard:   { popupTime: 450,  reload: 3,   spawnDelay: 200 }
+  easy:   { popupTime: 1300, reload: 6,   spawnDelay: 700 },
+  medium: { popupTime: 900,  reload: 5,   spawnDelay: 400 },
+  hard:   { popupTime: 600,  reload: 3,   spawnDelay: 220 }
 };
 const WIN_HITS = 30;
 const ROUND_TIME = 60; // seconds
 
-let state = "menu"; // menu, playing, fail, win, egg
+let state = "menu";
 let difficulty = "easy";
 
 // --- DOM ---
 const mainMenu = document.getElementById('mainMenu');
+const countdownScreen = document.getElementById('countdownScreen');
+const countdownMsg = document.getElementById('countdownMsg');
 const gameUI = document.getElementById('gameUI');
 const failScreen = document.getElementById('failScreen');
 const winScreen = document.getElementById('winScreen');
@@ -32,6 +34,8 @@ const menuBtn2 = document.getElementById('menuBtn2');
 const bouquetDiv = document.getElementById('bouquet');
 const envelope = document.getElementById('envelope');
 const eggMenuBtn = document.getElementById('eggMenuBtn');
+const popSound = document.getElementById('popSound');
+const secretHeart = document.getElementById('secretHeart');
 
 // --- GAME VARS ---
 let timeLeft = ROUND_TIME;
@@ -39,18 +43,18 @@ let score = 0;
 let shots = 0;
 let reloads = 0;
 let ammo = 6;
-let popupTime = 1100;
+let popupTime = 1300;
 let reloadSize = 6;
-let spawnDelay = 550;
+let spawnDelay = 700;
 let roundTimer, popupTimer, spawnTimer;
 let target = null;
 let aiming = false;
-let mouse = { x: 0, y: 0 };
+let mouse = { x: 300, y: 400 };
 let perfect = true; // for Easter egg
 
 // --- Main Menu handlers ---
 document.querySelectorAll(".mode-btn").forEach(btn => {
-  btn.onclick = () => startGame(btn.dataset.mode);
+  btn.onclick = () => beginCountdown(btn.dataset.mode);
 });
 function showMenu() {
   state = "menu";
@@ -59,17 +63,48 @@ function showMenu() {
   failScreen.style.display = "none";
   winScreen.style.display = "none";
   easterEgg.style.display = "none";
+  countdownScreen.style.display = "none";
   document.body.style.cursor = "";
+  crosshair.style.display = "none";
 }
-function startGame(mode) {
-  state = "playing";
+menuBtn.onclick = menuBtn2.onclick = eggMenuBtn.onclick = showMenu;
+retryBtn.onclick = againBtn.onclick = () => beginCountdown(difficulty);
+backBtn.onclick = () => showMenu();
+
+// --- Countdown before game starts ---
+function beginCountdown(mode) {
   difficulty = mode;
   mainMenu.style.display = "none";
+  gameUI.style.display = "none";
+  failScreen.style.display = "none";
+  winScreen.style.display = "none";
+  easterEgg.style.display = "none";
+  countdownScreen.style.display = "";
+  crosshair.style.display = "none";
+  let countArr = ["Get Ready...", "3", "2", "1", "GO!"];
+  let idx = 0;
+  countdownMsg.textContent = countArr[idx];
+  let timer = setInterval(() => {
+    idx++;
+    if(idx < countArr.length) {
+      countdownMsg.textContent = countArr[idx];
+    } else {
+      clearInterval(timer);
+      countdownScreen.style.display = "none";
+      setTimeout(() => startGame(mode), 350);
+    }
+  }, 850);
+}
+
+// --- Game Start ---
+function startGame(mode) {
+  state = "playing";
   failScreen.style.display = "none";
   winScreen.style.display = "none";
   easterEgg.style.display = "none";
   gameUI.style.display = "";
   document.body.style.cursor = "none";
+  crosshair.style.display = "";
   // Set difficulty:
   popupTime = DIFFICULTIES[mode].popupTime;
   reloadSize = DIFFICULTIES[mode].reload;
@@ -83,15 +118,16 @@ function startGame(mode) {
   target = null;
   perfect = true;
   updateHUD();
-  placeCrosshair(canvas.width/2,canvas.height/2);
+  placeCrosshair(mouse.x,mouse.y);
   nextTarget();
   roundTimer = setInterval(() => {
     timeLeft--;
     updateHUD();
-    if (timeLeft <= 0) failGame("Time's up! Try again?");
+    if (timeLeft <= 0 && state === "playing") failGame("Time's up! Try again?");
   }, 1000);
   animate();
 }
+
 function updateHUD() {
   timerSpan.textContent = `Time: ${timeLeft}s`;
   scoreSpan.textContent = `Score: ${score} / ${WIN_HITS}`;
@@ -104,12 +140,14 @@ function failGame(msg="Oops! Try again!") {
   failScreen.querySelector("#failMessage").textContent = msg;
   gameUI.style.display = "none";
   document.body.style.cursor = "";
+  crosshair.style.display = "none";
 }
 function winGame() {
   clearTimers();
   state = "win";
   winScreen.style.display = "";
   document.body.style.cursor = "";
+  crosshair.style.display = "none";
   gameUI.style.display = "none";
   let msg = `You did it! You hit ${score} hearts in ${ROUND_TIME} seconds!`;
   if (score >= WIN_HITS) msg += "\nYou're amazing! 💖";
@@ -124,37 +162,36 @@ function clearTimers() {
   clearTimeout(popupTimer);
   clearTimeout(spawnTimer);
 }
-menuBtn.onclick = menuBtn2.onclick = eggMenuBtn.onclick = showMenu;
-retryBtn.onclick = againBtn.onclick = () => startGame(difficulty);
-backBtn.onclick = () => showMenu();
 
 // --- Shooting ---
-canvas.addEventListener('mousemove', e => {
-  const rect = canvas.getBoundingClientRect();
-  mouse.x = e.clientX - rect.left;
-  mouse.y = e.clientY - rect.top;
-  placeCrosshair(mouse.x, mouse.y);
-});
-canvas.addEventListener('mouseleave', () => crosshair.style.display="none");
-canvas.addEventListener('mouseenter', () => crosshair.style.display="");
+function moveCrosshair(e) {
+  mouse.x = e.clientX;
+  mouse.y = e.clientY;
+  crosshair.style.transform = `translate(${mouse.x-22}px,${mouse.y-22}px)`;
+}
+document.addEventListener('mousemove', moveCrosshair);
 canvas.addEventListener('mousedown', shoot);
 document.addEventListener('keydown', e => {
   if (e.key === "r" || e.key === "R") doReload();
 });
 reloadBtn.onclick = doReload;
 function placeCrosshair(x, y) {
-  crosshair.style.left = (canvas.offsetLeft + x - 22) + "px";
-  crosshair.style.top = (canvas.offsetTop + y - 22) + "px";
+  crosshair.style.transform = `translate(${x-22}px,${y-22}px)`;
 }
 function shoot(e) {
   if (state !== "playing" || !target || ammo <= 0) return;
+  popSound.currentTime = 0;
+  popSound.play();
   shots++;
   ammo--;
   // check hit (circle hitbox)
-  const dx = mouse.x - target.x;
-  const dy = mouse.y - target.y;
+  // must get mouse relative to canvas for hit detection
+  let rect = canvas.getBoundingClientRect();
+  let mx = mouse.x - rect.left;
+  let my = mouse.y - rect.top;
+  const dx = mx - target.x;
+  const dy = my - target.y;
   if (dx*dx + dy*dy < target.r*target.r) {
-    // hit
     score++;
     updateHUD();
     popupTarget(false); // remove target
@@ -190,7 +227,6 @@ function nextTarget() {
 function popupTarget(removeOnly) {
   target = null;
   if (!removeOnly) {
-    // spawn next after delay
     spawnTimer = setTimeout(nextTarget, spawnDelay);
   }
 }
@@ -232,15 +268,30 @@ function animate() {
   requestAnimationFrame(animate);
 }
 
-// --- Easter Egg ---
+// --- Easter Egg Option 2: Click secret heart 5 times ---
+let secretClicks = 0;
+let secretTimer = null;
+secretHeart.onclick = () => {
+  secretClicks++;
+  if (secretClicks === 5) {
+    secretClicks = 0;
+    showEasterEgg();
+  } else {
+    if (secretTimer) clearTimeout(secretTimer);
+    secretTimer = setTimeout(()=>secretClicks=0, 1800);
+  }
+};
+
+// --- Easter Egg perfect round ---
 function showEasterEgg() {
   state = "egg";
   winScreen.style.display = "none";
   gameUI.style.display = "none";
   mainMenu.style.display = "none";
   failScreen.style.display = "none";
+  countdownScreen.style.display = "none";
+  crosshair.style.display = "none";
   easterEgg.style.display = "";
-  // Bouquet
   bouquetDiv.innerHTML = '';
   for(let i=0; i<5; i++) {
     const flower = document.createElement('span');
