@@ -11,6 +11,9 @@ const basket = {
   speed: 7
 };
 
+let leftPressed = false;
+let rightPressed = false;
+
 let hearts = [];
 let collected = 0;
 let level = 1;
@@ -20,12 +23,27 @@ let heartsToCollect = 10; // per level
 const heartColors = ['#ff0000', '#ffffff', '#0000ff'];
 const heartEmojis = ['❤️','🐰','🌼','🍓'];
 
+// Listen for key presses for smooth movement
 document.addEventListener('keydown', (e) => {
-  if(e.key === 'ArrowLeft' || e.key === 'a') basket.x -= basket.speed;
-  if(e.key === 'ArrowRight' || e.key === 'd') basket.x += basket.speed;
-  if(basket.x < 0) basket.x = 0;
-  if(basket.x + basket.width > canvas.width) basket.x = canvas.width - basket.width;
+  if (e.key === 'ArrowLeft' || e.key === 'a') leftPressed = true;
+  if (e.key === 'ArrowRight' || e.key === 'd') rightPressed = true;
 });
+
+document.addEventListener('keyup', (e) => {
+  if (e.key === 'ArrowLeft' || e.key === 'a') leftPressed = false;
+  if (e.key === 'ArrowRight' || e.key === 'd') rightPressed = false;
+});
+
+function moveBasket() {
+  if (leftPressed) {
+    basket.x -= basket.speed;
+    if (basket.x < 0) basket.x = 0;
+  }
+  if (rightPressed) {
+    basket.x += basket.speed;
+    if (basket.x + basket.width > canvas.width) basket.x = canvas.width - basket.width;
+  }
+}
 
 function spawnHeart() {
   const size = 30;
@@ -38,9 +56,7 @@ function spawnHeart() {
 function drawBasket() {
   ctx.fillStyle = '#fff';
   ctx.fillRect(basket.x, basket.y, basket.width, basket.height);
-  ctx.font = '28px Arial';
-  ctx.fillStyle = '#000';
-  ctx.fillText('🎁', basket.x + basket.width/2 - 14, basket.y - 10);
+  // REMOVED: ctx.fillText('🎁', basket.x + basket.width/2 - 14, basket.y - 10);
 }
 
 function drawHearts() {
@@ -109,6 +125,7 @@ function drawClouds() {
 function gameLoop() {
   ctx.clearRect(0,0,canvas.width,canvas.height);
   drawClouds();
+  moveBasket();    // Make sure to update basket position each frame!
   drawBasket();
   drawHearts();
   checkCollision();
