@@ -1,195 +1,315 @@
-body {
-  background: linear-gradient(to bottom, #ffecf2 0%, #ffe0e8 100%);
-  text-align: center;
-  font-family: 'Comic Sans MS', 'Comic Sans', cursive, Arial, sans-serif;
-  margin: 0;
-  padding: 0;
-  overflow: hidden;
+// --- CONFIG ---
+const DIFFICULTIES = {
+  easy:   { popupTime: 1300, reload: 6,   spawnDelay: 700 },
+  medium: { popupTime: 900,  reload: 5,   spawnDelay: 400 },
+  hard:   { popupTime: 600,  reload: 3,   spawnDelay: 220 }
+};
+const WIN_HITS = 30;
+const ROUND_TIME = 60; // seconds
+
+let state = "menu";
+let difficulty = "easy";
+
+// --- DOM ---
+const mainMenu = document.getElementById('mainMenu');
+const countdownScreen = document.getElementById('countdownScreen');
+const countdownMsg = document.getElementById('countdownMsg');
+const gameUI = document.getElementById('gameUI');
+const failScreen = document.getElementById('failScreen');
+const winScreen = document.getElementById('winScreen');
+const easterEgg = document.getElementById('easterEgg');
+const canvas = document.getElementById('gameCanvas');
+const ctx = canvas.getContext('2d');
+const hud = document.getElementById('hud');
+const crosshair = document.getElementById('crosshair');
+const timerSpan = document.getElementById('timer');
+const scoreSpan = document.getElementById('score');
+const ammoSpan = document.getElementById('ammo');
+const reloadBtn = document.getElementById('reloadBtn');
+const backBtn = document.getElementById('backBtn');
+const retryBtn = document.getElementById('retryBtn');
+const menuBtn = document.getElementById('menuBtn');
+const againBtn = document.getElementById('againBtn');
+const menuBtn2 = document.getElementById('menuBtn2');
+const bouquetDiv = document.getElementById('bouquet');
+const envelope = document.getElementById('envelope');
+const eggMenuBtn = document.getElementById('eggMenuBtn');
+const popSound = document.getElementById('popSound');
+const secretHeart = document.getElementById('secretHeart');
+
+// --- GAME VARS ---
+let timeLeft = ROUND_TIME;
+let score = 0;
+let shots = 0;
+let reloads = 0;
+let ammo = 6;
+let popupTime = 1300;
+let reloadSize = 6;
+let spawnDelay = 700;
+let roundTimer, popupTimer, spawnTimer;
+let target = null;
+let aiming = false;
+let mouse = { x: 300, y: 400 };
+let perfect = true; // for Easter egg
+
+// --- Main Menu handlers ---
+document.querySelectorAll(".mode-btn").forEach(btn => {
+  btn.onclick = () => beginCountdown(btn.dataset.mode);
+});
+function showMenu() {
+  state = "menu";
+  mainMenu.style.display = "";
+  gameUI.style.display = "none";
+  failScreen.style.display = "none";
+  winScreen.style.display = "none";
+  easterEgg.style.display = "none";
+  countdownScreen.style.display = "none";
+  document.body.style.cursor = "";
+  crosshair.style.display = "none";
 }
-h1 {
-  color: #e75480;
-  margin-bottom: 20px;
+menuBtn.onclick = menuBtn2.onclick = eggMenuBtn.onclick = showMenu;
+retryBtn.onclick = againBtn.onclick = () => beginCountdown(difficulty);
+backBtn.onclick = () => showMenu();
+
+// --- Countdown before game starts ---
+function beginCountdown(mode) {
+  difficulty = mode;
+  mainMenu.style.display = "none";
+  gameUI.style.display = "none";
+  failScreen.style.display = "none";
+  winScreen.style.display = "none";
+  easterEgg.style.display = "none";
+  countdownScreen.style.display = "";
+  crosshair.style.display = "none";
+  let countArr = ["Get Ready...", "3", "2", "1", "GO!"];
+  let idx = 0;
+  countdownMsg.textContent = countArr[idx];
+  let timer = setInterval(() => {
+    idx++;
+    if(idx < countArr.length) {
+      countdownMsg.textContent = countArr[idx];
+    } else {
+      clearInterval(timer);
+      countdownScreen.style.display = "none";
+      setTimeout(() => startGame(mode), 350);
+    }
+  }, 850);
 }
-.menu-btns-center {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 18px;
-  margin-top: 35px;
-  margin-bottom: 30px;
+
+// --- Game Start ---
+function startGame(mode) {
+  state = "playing";
+  failScreen.style.display = "none";
+  winScreen.style.display = "none";
+  easterEgg.style.display = "none";
+  gameUI.style.display = "";
+  document.body.style.cursor = "none";
+  crosshair.style.display = "";
+  // Set difficulty:
+  popupTime = DIFFICULTIES[mode].popupTime;
+  reloadSize = DIFFICULTIES[mode].reload;
+  spawnDelay = DIFFICULTIES[mode].spawnDelay;
+  // Reset
+  score = 0;
+  shots = 0;
+  reloads = 0;
+  ammo = reloadSize;
+  timeLeft = ROUND_TIME;
+  target = null;
+  perfect = true;
+  updateHUD();
+  placeCrosshair(mouse.x,mouse.y);
+  nextTarget();
+  roundTimer = setInterval(() => {
+    timeLeft--;
+    updateHUD();
+    if (timeLeft <= 0 && state === "playing") failGame("Time's up! Try again?");
+  }, 1000);
+  animate();
 }
-.center-btns {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 18px;
-  margin-top: 40px;
+
+function updateHUD() {
+  timerSpan.textContent = `Time: ${timeLeft}s`;
+  scoreSpan.textContent = `Score: ${score} / ${WIN_HITS}`;
+  ammoSpan.textContent = `Ammo: ${ammo}/${reloadSize}`;
 }
-button {
-  font-size: 1.3em;
-  padding: 14px 32px;
-  border: none;
-  border-radius: 12px;
-  background: #e75480;
-  color: #fff;
-  box-shadow: 0 2px 12px #e7548099;
-  cursor: pointer;
-  margin: 0;
-  transition: background 0.2s;
+function failGame(msg="Oops! Try again!") {
+  clearTimers();
+  state = "fail";
+  failScreen.style.display = "";
+  failScreen.querySelector("#failMessage").textContent = msg;
+  gameUI.style.display = "none";
+  document.body.style.cursor = "";
+  crosshair.style.display = "none";
 }
-button:hover { background: #c6436a; }
-.howto { font-size:1.1em; color:#8d4667; margin-top:8px;}
-#hud {
-  display: flex;
-  justify-content: space-around;
-  align-items: center;
-  background: #fff7fa;
-  border-radius: 18px;
-  box-shadow: 0 2px 12px #ffb3c6aa;
-  padding: 12px 0;
-  width: 600px;
-  margin: 18px auto 0 auto;
-  font-size: 1.15em;
-  position: relative;
-  z-index: 2;
+function winGame() {
+  clearTimers();
+  state = "win";
+  winScreen.style.display = "";
+  document.body.style.cursor = "";
+  crosshair.style.display = "none";
+  gameUI.style.display = "none";
+  let msg = `You did it! You hit ${score} hearts in ${ROUND_TIME} seconds!`;
+  if (score >= WIN_HITS) msg += "\nYou're amazing! 💖";
+  if (perfect && score === WIN_HITS && reloads === 0) {
+    msg += "\nPERFECT!! (Secret unlocked)";
+    setTimeout(showEasterEgg, 2000);
+  }
+  winScreen.querySelector("#congratsMsg").textContent = msg;
 }
-#gameCanvas {
-  display: block;
-  margin: 0 auto;
-  background: linear-gradient(to top, #ffe0e8 0%, #ffffff 100%);
-  border-radius: 24px;
-  box-shadow: 0 4px 22px #ffb6d5cc;
-  cursor: none !important;
+function clearTimers() {
+  clearInterval(roundTimer);
+  clearTimeout(popupTimer);
+  clearTimeout(spawnTimer);
 }
-#crosshair {
-  position: fixed;
-  left: 0; top: 0;
-  pointer-events: none;
-  font-size: 2.2em;
-  z-index: 10;
-  transition: transform 0.05s;
-  text-shadow: 0 2px 8px #ffb6d5bb;
-  user-select: none;
-  will-change: transform;
-  width: 44px;
-  height: 44px;
-  text-align: center;
+
+// --- Shooting ---
+function moveCrosshair(e) {
+  mouse.x = e.clientX;
+  mouse.y = e.clientY;
+  crosshair.style.transform = `translate(${mouse.x-22}px,${mouse.y-22}px)`;
 }
-#failScreen, #winScreen, #easterEgg, #countdownScreen {
-  margin-top: 60px;
+document.addEventListener('mousemove', moveCrosshair);
+canvas.addEventListener('mousedown', shoot);
+document.addEventListener('keydown', e => {
+  if (e.key === "r" || e.key === "R") doReload();
+});
+reloadBtn.onclick = doReload;
+function placeCrosshair(x, y) {
+  crosshair.style.transform = `translate(${x-22}px,${y-22}px)`;
 }
-#failMessage, #congratsMsg, .end-caption {
-  font-size: 1.4em;
-  margin: 20px auto 0 auto;
-  padding: 10px 20px;
-  width: fit-content;
-  background: #fff7fa;
-  border-radius: 18px;
-  box-shadow: 0 2px 12px #ffb3c6aa;
+function shoot(e) {
+  if (state !== "playing" || !target || ammo <= 0) return;
+  popSound.currentTime = 0;
+  popSound.play();
+  shots++;
+  ammo--;
+  // check hit (circle hitbox)
+  // must get mouse relative to canvas for hit detection
+  let rect = canvas.getBoundingClientRect();
+  let mx = mouse.x - rect.left;
+  let my = mouse.y - rect.top;
+  const dx = mx - target.x;
+  const dy = my - target.y;
+  if (dx*dx + dy*dy < target.r*target.r) {
+    score++;
+    updateHUD();
+    popupTarget(false); // remove target
+    if (score >= WIN_HITS) winGame();
+    else spawnTimer = setTimeout(nextTarget, spawnDelay);
+  } else {
+    perfect = false;
+    failGame("You missed! Try again!");
+    return;
+  }
+  if (ammo <= 0) doReload();
 }
-#bouquet {
-  display: flex;
-  flex-direction: row;
-  flex-wrap: wrap;
-  justify-content: center;
-  margin-bottom: 40px;
-  min-height: 140px;
+function doReload() {
+  if (state !== "playing") return;
+  ammo = reloadSize;
+  reloads++;
+  updateHUD();
 }
-.flower { margin: 0 6px; position: relative; top: 0; }
-.daisy { font-size: 2.5em; filter: drop-shadow(0 3px 0 #c6e2ff);}
-.rose { font-size: 2.5em; filter: drop-shadow(0 3px 0 #c6e2ff);}
-#envelopeContainer { display: flex; justify-content: center; margin-bottom: 20px;}
-#envelope {
-  position: relative;
-  width: 180px;
-  height: 120px;
-  margin: 0 auto;
-  cursor: pointer;
-  perspective: 500px;
+
+// --- Targets ---
+function nextTarget() {
+  if (state !== "playing") return;
+  // random spot, not too close to edges
+  let x = 60 + Math.random()*(canvas.width-120);
+  let y = 100 + Math.random()*(canvas.height-180);
+  target = { x, y, r: 36 };
+  popupTimer = setTimeout(() => {
+    perfect = false;
+    popupTarget(true);
+    failGame("Target got away! Try again!");
+  }, popupTime);
 }
-#envelopeFront {
-  position: absolute;
-  width: 100%;
-  height: 100%;
-  background: #fff;
-  border: 2.5px solid #c6e2ff;
-  border-radius: 10px;
-  z-index: 2;
-  transition: transform 1s cubic-bezier(.77,0,.18,1);
-  display: flex;
-  align-items: flex-end;
-  justify-content: flex-end;
-  padding: 8px;
+function popupTarget(removeOnly) {
+  target = null;
+  if (!removeOnly) {
+    spawnTimer = setTimeout(nextTarget, spawnDelay);
+  }
 }
-.bunny-stamp {
-  font-size: 2em;
-  background: #e0eeff;
-  border-radius: 50%;
-  padding: 4px;
-  border: 2px solid #b4cdfc;
-  box-shadow: 0 2px 6px #b4cdfc99;
+
+// --- Drawing ---
+function animate() {
+  if (state !== "playing") return;
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  // clouds
+  ctx.save();
+  ctx.globalAlpha = 0.15;
+  ctx.fillStyle = "#fff";
+  for (let i = 0; i < 5; i++) {
+    const cloudX = (i * 120 + (Date.now() / 50)) % canvas.width;
+    ctx.beginPath();
+    ctx.arc(cloudX, 100 + i*20, 30, 0, Math.PI * 2);
+    ctx.arc(cloudX + 30, 110 + i*20, 30, 0, Math.PI * 2);
+    ctx.arc(cloudX + 60, 100 + i*20, 30, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  ctx.restore();
+  // target
+  if (target) {
+    ctx.save();
+    ctx.beginPath();
+    ctx.arc(target.x, target.y, target.r, 0, 2*Math.PI);
+    ctx.fillStyle = "#fff";
+    ctx.shadowColor = "#e75480";
+    ctx.shadowBlur = 30;
+    ctx.fill();
+    ctx.font = "48px Arial";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillStyle = "#e75480";
+    ctx.shadowBlur = 0;
+    ctx.fillText("❤️", target.x, target.y+3);
+    ctx.restore();
+  }
+  requestAnimationFrame(animate);
 }
-#envelope.open #envelopeFront { transform: rotateX(-100deg);}
-#envelopeBack {
-  position: absolute;
-  width: 100%;
-  height: 100%;
-  background: #fff;
-  border: 2.5px solid #c6e2ff;
-  border-radius: 10px;
-  z-index: 1;
+
+// --- Easter Egg Option 2: Click secret heart 5 times ---
+let secretClicks = 0;
+let secretTimer = null;
+secretHeart.onclick = () => {
+  secretClicks++;
+  if (secretClicks === 5) {
+    secretClicks = 0;
+    showEasterEgg();
+  } else {
+    if (secretTimer) clearTimeout(secretTimer);
+    secretTimer = setTimeout(()=>secretClicks=0, 1800);
+  }
+};
+
+// --- Easter Egg perfect round ---
+function showEasterEgg() {
+  state = "egg";
+  winScreen.style.display = "none";
+  gameUI.style.display = "none";
+  mainMenu.style.display = "none";
+  failScreen.style.display = "none";
+  countdownScreen.style.display = "none";
+  crosshair.style.display = "none";
+  easterEgg.style.display = "";
+  bouquetDiv.innerHTML = '';
+  for(let i=0; i<5; i++) {
+    const flower = document.createElement('span');
+    flower.className = 'flower daisy';
+    flower.innerText = '🌼';
+    bouquetDiv.appendChild(flower);
+  }
+  for(let i=0; i<5; i++) {
+    const flower = document.createElement('span');
+    flower.className = 'flower rose';
+    flower.innerText = '💙';
+    bouquetDiv.appendChild(flower);
+  }
+  envelope.classList.remove('open');
+  envelope.onclick = function() {
+    envelope.classList.add('open');
+  };
 }
-#letter {
-  position: absolute;
-  width: 90%;
-  left: 5%;
-  top: 12%;
-  height: 76%;
-  background: #fff;
-  border-radius: 10px;
-  z-index: 0;
-  box-shadow: 0 2px 8px #aac6f2aa;
-  opacity: 0;
-  transform: translateY(35px);
-  transition: opacity 0.7s 0.4s, transform 0.7s 0.4s;
-  overflow: hidden;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-#envelope.open #letter { opacity: 1; transform: translateY(0);}
-#letterText {
-  padding: 25px 15px 15px 15px;
-  font-size: 1.18em;
-  color: #2d2a30;
-  text-align: center;
-}
-.end-caption {
-  margin-top: 28px;
-  color: #5a5bb0;
-  font-weight: bold;
-  font-size: 1.2em;
-}
-#secretHeart {
-  position: absolute;
-  top: 18px; left: 18px;
-  font-size: 2.2em;
-  cursor: pointer;
-  user-select: none;
-  opacity: 0.5;
-  z-index: 100;
-  transition: opacity 0.2s, transform 0.2s;
-}
-#secretHeart:hover { opacity: 1; transform: scale(1.1); }
-#countdownMsg {
-  font-size: 3em;
-  color: #e75480;
-  margin-top: 250px;
-  background: #fff7fa;
-  width: fit-content;
-  margin-left: auto;
-  margin-right: auto;
-  padding: 30px 60px;
-  border-radius: 22px;
-  box-shadow: 0 2px 16px #ffb3c6aa;
-}
+
+// --- On load: show menu ---
+showMenu();
