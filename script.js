@@ -1,3 +1,6 @@
+// Ensure final message is hidden at start
+document.getElementById('finalMessage').style.display = 'none';
+
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
 
@@ -34,14 +37,15 @@ function spawnHeart() {
 }
 
 function drawBasket() {
-  ctx.fillStyle = '#ffffff';
+  ctx.fillStyle = '#fff';
   ctx.fillRect(basket.x, basket.y, basket.width, basket.height);
+  ctx.font = '28px Arial';
   ctx.fillStyle = '#000';
-  ctx.fillText('🎁', basket.x + basket.width/2 - 8, basket.y - 10);
+  ctx.fillText('🎁', basket.x + basket.width/2 - 14, basket.y - 10);
 }
 
 function drawHearts() {
-  ctx.font = '24px Arial';
+  ctx.font = '28px Arial';
   hearts.forEach(h => {
     ctx.fillStyle = h.color;
     ctx.fillText(h.emoji, h.x, h.y);
@@ -50,17 +54,28 @@ function drawHearts() {
 }
 
 function checkCollision() {
-  hearts.forEach((h, i) => {
-    if(h.y + 24 >= basket.y && h.x + 24 >= basket.x && h.x <= basket.x + basket.width) {
+  for (let i = hearts.length - 1; i >= 0; i--) {
+    let h = hearts[i];
+    // Use bounding box for emoji
+    if (
+      h.y + 24 >= basket.y &&
+      h.y <= basket.y + basket.height &&
+      h.x + 24 >= basket.x &&
+      h.x <= basket.x + basket.width
+    ) {
       hearts.splice(i,1);
       collected++;
       document.getElementById('message').innerText = "good job princess!";
-      setTimeout(() => { document.getElementById('message').innerText = `Level ${level} - Hearts: ${collected}/${heartsToCollect}` }, 1000);
-      if(collected >= heartsToCollect) nextLevel();
+      setTimeout(() => { 
+        document.getElementById('message').innerText = `Level ${level} - Hearts: ${collected}/${heartsToCollect}` 
+      }, 900);
+      if(collected >= heartsToCollect) {
+        setTimeout(nextLevel, 800);
+      }
     } else if(h.y > canvas.height) {
       hearts.splice(i,1);
     }
-  });
+  }
 }
 
 function nextLevel() {
@@ -71,23 +86,26 @@ function nextLevel() {
     heartsToCollect += 5;
     document.getElementById('message').innerText = `Level ${level} - Hearts: ${collected}/${heartsToCollect}`;
   } else {
-    document.getElementById('gameCanvas').style.display = 'none';
+    canvas.style.display = 'none';
     document.getElementById('message').style.display = 'none';
     document.getElementById('finalMessage').style.display = 'block';
   }
 }
 
 function drawClouds() {
-  ctx.fillStyle = 'rgba(255,255,255,0.6)';
+  ctx.save();
+  ctx.globalAlpha = 0.4;
+  ctx.fillStyle = '#fff';
   const cloudY = 100;
   for(let i=0;i<5;i++){
-    const cloudX = (i*120 + Date.now()/50)%canvas.width;
+    const cloudX = (i*120 + (Date.now()/50))%canvas.width;
     ctx.beginPath();
     ctx.arc(cloudX, cloudY + i*20, 30, 0, Math.PI*2);
     ctx.arc(cloudX + 30, cloudY + i*20 + 10, 30, 0, Math.PI*2);
     ctx.arc(cloudX + 60, cloudY + i*20, 30, 0, Math.PI*2);
     ctx.fill();
   }
+  ctx.restore();
 }
 
 function gameLoop() {
@@ -100,5 +118,8 @@ function gameLoop() {
   requestAnimationFrame(gameLoop);
 }
 
+document.getElementById('message').style.display = 'block';
 document.getElementById('message').innerText = `Level ${level} - Hearts: ${collected}/${heartsToCollect}`;
+
+// Start game
 gameLoop();
